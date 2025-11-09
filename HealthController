@@ -1,0 +1,106 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using StarterAssets;
+
+public class healthController : MonoBehaviour
+{
+
+    public float totalHealth = 100f;
+    public float currentHealth;
+    public Slider healthSlider;
+
+    public bool isTakingDamage = false;
+    public bool isHealing = false;
+    public float healingTime = 20f;
+    public float remaingHealingTime;
+
+    public Animator playerAnimator;
+
+    private ThirdPersonController thirdPersonController;
+
+    void Start()
+    {
+        currentHealth = totalHealth;
+        remaingHealingTime = healingTime;
+        playerAnimator.SetBool("isCombatOver", true);
+        healthSlider.value = currentHealth;
+    }
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.H))
+        {
+            takeDamage(25f);
+        }
+        if (isTakingDamage)
+        {
+            takingDamage();
+        }
+        if (isHealing)
+        {
+            startHealing();
+        }
+    }
+
+    public void takeDamage(float damage)
+    {
+        playerAnimator.SetLayerWeight(1, 1);
+        currentHealth -= damage;
+        remaingHealingTime = healingTime;
+        isTakingDamage = true;
+        isHealing = false;
+        StartCoroutine(StartCombatAnimation());
+        healthSlider.value = currentHealth;
+
+        if (currentHealth <= 0)
+        {
+            playerGameOver();
+        }
+    }
+
+    public void takingDamage()
+    {
+        remaingHealingTime -= Time.deltaTime;
+        if (remaingHealingTime <= 0)
+        {
+            isTakingDamage = false;
+            isHealing = true;
+        }
+    }
+
+    public void startHealing()
+    {
+        currentHealth += Time.deltaTime * 1; // Heal at given rate in health per second
+        playerAnimator.SetBool("isCombatOver", true);
+        playerAnimator.SetLayerWeight(1, 0);
+        healthSlider.value = currentHealth;
+        if (currentHealth >= totalHealth)
+        {
+            currentHealth = totalHealth;
+            isHealing = false;
+            remaingHealingTime = healingTime;
+        }
+    }
+
+    public void playerGameOver()
+    {
+        // Implement game over logic here
+        currentHealth = 0;
+        playerAnimator.SetBool("isDead", true);
+        playerAnimator.SetLayerWeight(1, 0);
+        this.gameObject.GetComponent<ThirdPersonController>().enabled = false;
+        Debug.Log("Game Over");
+    }
+
+    IEnumerator StartCombatAnimation()
+    {
+        playerAnimator.SetBool("isCombatOver", false);
+        playerAnimator.SetBool("takeDamage", true);
+        yield return new WaitForSeconds(0.5f);
+        playerAnimator.SetBool("takeDamage", false);
+        yield return new WaitForSeconds(5f);
+        playerAnimator.SetLayerWeight(1, 0);
+    }
+}
